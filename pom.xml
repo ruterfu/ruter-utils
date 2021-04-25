@@ -6,8 +6,45 @@
 
     <groupId>com.ruterfu</groupId>
     <artifactId>ruter-utils</artifactId>
+    <name>ruter-utils</name>
     <version>1.0</version>
     <packaging>jar</packaging>
+    <url>https://github.com/ruterfu/ruter-utils</url>
+    <description>Ruter common utils.</description>
+    <licenses>
+        <license>
+            <name>Apache Codec License</name>
+            <url>https://github.com/apache/commons-codec/blob/master/LICENSE.txt</url>
+            <distribution>repo</distribution>
+            <comments>Apache codec 3rd source</comments>
+        </license>
+        <license>
+            <name>Apache Validator License</name>
+            <url>https://github.com/apache/commons-validator/blob/master/LICENSE.txt</url>
+            <distribution>repo</distribution>
+            <comments>Apache validator 3rd source</comments>
+        </license>
+    </licenses>
+    <scm>
+        <url>https://github.com/ruterfu/ruter-utils</url>
+        <connection>https://github.com/ruterfu/ruter-utils.git</connection>
+    </scm>
+    <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <skipTests>true</skipTests>
+    </properties>
+    <developers>
+        <developer>
+            <name>Fu Bo</name>
+            <id>ruterfu</id>
+            <email>ruterfu@gmail.com</email>
+            <roles>
+                <role>Developer</role>
+            </roles>
+            <timezone>+8</timezone>
+        </developer>
+    </developers>
     <build>
         <plugins>
             <plugin>
@@ -22,7 +59,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
-                <version>3.0.1</version>
+                <version>3.2.1</version>
                 <executions>
                     <execution>
                         <id>attach-sources</id>
@@ -32,23 +69,49 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>1.6</version>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <encoding>UTF-8</encoding>
+                        </configuration>
+
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
-    <properties>
-        <java.version>1.8</java.version>
-        <skipTests>true</skipTests>
-    </properties>
 
     <distributionManagement>
-        <repository>
-            <id>release</id>
-            <url>http://10.0.0.92:9900/nexus/content/repositories/releases/</url>
-        </repository>
-
         <snapshotRepository>
-            <id>snapshots</id>
-            <url>http://10.0.0.92:9900/nexus/content/repositories/snapshots/</url>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
         </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
     </distributionManagement>
 
 </project>
