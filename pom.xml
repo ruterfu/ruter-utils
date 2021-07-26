@@ -7,7 +7,7 @@
     <groupId>com.ruterfu</groupId>
     <artifactId>ruter-utils</artifactId>
     <name>ruter-utils</name>
-    <version>1.0</version>
+    <version>1.1</version>
     <packaging>jar</packaging>
     <url>https://github.com/ruterfu/ruter-utils</url>
     <description>Ruter common utils.</description>
@@ -34,6 +34,19 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <skipTests>true</skipTests>
     </properties>
+    <dependencies>
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>fastjson</artifactId>
+            <version>1.2.76</version>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>RELEASE</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
     <developers>
         <developer>
             <name>Fu Bo</name>

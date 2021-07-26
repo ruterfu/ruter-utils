@@ -3,7 +3,7 @@
 // (powered by Fernflower decompiler)
 //
 
-package com.ruterfu.third_pkg.apache.codec;
+package com.ruterfu.thirdpkg.apache.codec;
 
 public class DecoderException extends Exception {
     private static final long serialVersionUID = 1L;

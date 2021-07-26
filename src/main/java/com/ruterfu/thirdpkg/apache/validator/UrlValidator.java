@@ -10,7 +10,7 @@
  *   <version>1.7</version>
  *  </dependency>
  */
-package com.ruterfu.third_pkg.apache.validator;
+package com.ruterfu.thirdpkg.apache.validator;
 
 import java.io.Serializable;
 import java.net.URI;

@@ -3,7 +3,7 @@
 // (powered by Fernflower decompiler)
 //
 
-package com.ruterfu.third_pkg.apache.codec;
+package com.ruterfu.thirdpkg.apache.codec;
 
 import java.util.Arrays;
 import java.util.Objects;

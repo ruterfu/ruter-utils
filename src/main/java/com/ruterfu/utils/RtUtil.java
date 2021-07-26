@@ -1,7 +1,11 @@
 package com.ruterfu.utils;
 
-import com.ruterfu.third_pkg.apache.validator.UrlValidator;
-import com.ruterfu.third_pkg.apache.codec.Base64;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+import com.ruterfu.thirdpkg.apache.validator.UrlValidator;
+import com.ruterfu.thirdpkg.apache.codec.Base64;
+import com.ruterfu.utils.aes.AES;
 
 import java.io.*;
 import java.math.BigDecimal;
@@ -233,21 +237,41 @@ public class RtUtil {
     }
 
     /**
-     * 判断是否为空
-     * @param text 文本
+     * 判断是否为空(复制 org.apache.commons.lang3.StringUtils#isBlank)
+     * @param cs 文本
      * @return 文本为null 或空字符串，或trim后为空字符串均视为null
      */
-    public static boolean isNull(String text) {
-        return text == null || text.length() == 0 || text.trim().length() == 0;
+    public static boolean isNull(final CharSequence cs) {
+        int strLen = cs == null ? 0 : cs.length();
+        if (strLen != 0) {
+            for (int i = 0; i < strLen; ++i) {
+                if (!Character.isWhitespace(cs.charAt(i))) {
+                    return false;
+                }
+            }
+
+        }
+        return true;
+    }
+    /**
+     * 判断是否为非空，空字符串页视为空
+     * @param cs 文本
+     * @return 文本不为null 且不为空字符串，且trim后为不为空字符串
+     */
+    public static boolean isNotNull(final CharSequence cs) {
+        return !isNull(cs);
     }
 
     /**
-     * 判断是否为空文本（不等同于null）
-     * @param text 文本
-     * @return 文本不为null的情况下，空字符串或trim后空字符串均视为文本为空
+     * 判断是否为空文本（不等同于isNull，复制 org.apache.commons.lang3.StringUtils#isEmpty）
+     * @param cs 文本
+     * @return 文本为null的情况下，空字符串视为文本为空
      */
-    public static boolean isEmpty(String text) {
-        return text != null || text.length() == 0 || text.trim().length() == 0;
+    public static boolean isEmpty(final CharSequence cs) {
+        return cs == null || cs.length() == 0;
+    }
+    public static boolean isNotEmpty(final CharSequence cs) {
+        return !isEmpty(cs);
     }
 
     /**
@@ -338,6 +362,19 @@ public class RtUtil {
     }
 
     /**
+     * 随机生成一个数字边界的数字
+     * @param start 开始位置
+     * @param end 结束位置
+     * @return 返回这个位置区间的数字，如果结束位置小于开始位置，则会返回开始位置的值
+     */
+    public static int randomNumBoundary(int start, int end) {
+        if(end <= start) {
+            return start;
+        }
+        return new Random().nextInt(end - start + 1) + start;
+    }
+
+    /**
      * 随机一串纯英文字符串, 包含大小写
      * @param randomLength 随机长度
      * @return 随机字符串
@@ -383,7 +420,17 @@ public class RtUtil {
      * @return 随机字符串
      */
     public static String random(int randomLength) {
-        String base = "AOEIUVBPMFDTNLGKHJQXZCSRYWaoeiuvbpmfdtnlgkhjqxzcsryw1234567890";
+        return random(randomLength, false);
+    }
+
+    /**
+     * 随机一串字符, 包含英文大小写, 数字
+     * @param randomLength 随机长度
+     * @param withSymbol 是否包含特殊符号
+     * @return 随机字符串
+     */
+    public static String random(int randomLength, boolean withSymbol) {
+        String base = "AOEIUVBPMFDTNLGKHJQXZCSRYWaoeiuvbpmfdtnlgkhjqxzcsryw1234567890" + (withSymbol ? ",./!@#$%^&*()_+[]\\;'<>?:{}|" : "");
         return random(base, randomLength);
     }
 
@@ -396,7 +443,7 @@ public class RtUtil {
     public static String random(String rand, int randomLength) {
         Random random = new Random();
         StringBuilder sb = new StringBuilder();
-        randomLength = randomLength < 1 || randomLength > 100 ? 10 : randomLength;
+        randomLength = randomLength < 1 ? 10 : randomLength;
         for (int i = 0; i < randomLength; i++) {
             int number = random.nextInt(rand.length());
             sb.append(rand.charAt(number));
@@ -408,9 +455,15 @@ public class RtUtil {
      * 随机一个UUID, 会移除中间分割线
      * @return 随机字符串
      */
+
     public static String randomUUID() {
-        String pick = System.currentTimeMillis() + System.currentTimeMillis() + "";
-        return UUID.nameUUIDFromBytes(pick.getBytes()).toString().replace("-", "");
+        return randomUUIDWithLine().replace("-", "");
+    }
+    public static String randomUUIDWithLine() {
+        return UUID.randomUUID().toString();
+    }
+    public static String randomAES256Key() {
+        return random(43);
     }
 
     /**
@@ -513,8 +566,8 @@ public class RtUtil {
      * @return 当前时间
      */
     public static String getNowTimeString() {
-        String[] data = getTimeStringArray();
-        return data[0] + data[1] + data[2] + data[3] + data[4] + data[5];
+        int[] data = getTodayYMDHMSArray();
+        return data[0] + singleToTen(data[1]) + singleToTen(data[2]) + singleToTen(data[3]) + singleToTen(data[4]) + singleToTen(data[5]) + "";
     }
 
     /**
@@ -522,8 +575,18 @@ public class RtUtil {
      * @return 当前年月日
      */
     public static String getTodayTimeString() {
-        String[] data = getTimeStringArray();
-        return data[0] + data[1] + data[2];
+        int[] data = getTodayYMDHMSArray();
+        return data[0] + singleToTen(data[1]) + singleToTen(data[2]) + "";
+    }
+
+
+    /**
+     * 当前时间转int
+     * @return 时间int
+     */
+    public static int[] getTodayYMDHMSArray() {
+        Calendar calendar = Calendar.getInstance();
+        return  new int[]{calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH) + 1, calendar.get(Calendar.DAY_OF_MONTH), calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE), calendar.get(Calendar.SECOND)};
     }
 
     /**
@@ -532,7 +595,16 @@ public class RtUtil {
      * @return MD5
      */
     public static String md5(String source) {
-        return digest(source, "MD5");
+        return digest(source.getBytes(StandardCharsets.UTF_8), "MD5");
+    }
+
+    /**
+     * 计算文件的MD5摘要值
+     * @param fileSource 源文件
+     * @return 算法值
+     */
+    public static String md5(File fileSource) {
+        return digestFile(fileSource, "MD5");
     }
 
     /**
@@ -563,7 +635,16 @@ public class RtUtil {
      * @return SHA1
      */
     public static String sha1(String source) {
-        return digest(source, "SHA1");
+        return digest(source.getBytes(StandardCharsets.UTF_8), "SHA1");
+    }
+
+    /**
+     * 计算文件的SHA1摘要值
+     * @param fileSource 源文件
+     * @return 算法值
+     */
+    public static String sha1(File fileSource) {
+        return digestFile(fileSource, "SHA1");
     }
 
     /**
@@ -594,24 +675,40 @@ public class RtUtil {
      * @param algorithm 算法
      * @return 摘要值
      */
-    public static String digest(String source, String algorithm) {
+    public static String digest(byte[] source, String algorithm) {
         try {
-            MessageDigest md5Digest = MessageDigest.getInstance(algorithm);
-            md5Digest.update(source.getBytes(StandardCharsets.UTF_8));
-            String s = new BigInteger(1, md5Digest.digest()).toString(16);
-            if (s.length() != 32) {
-                int len = 32 - s.length();
-                StringBuilder sb = new StringBuilder();
-                for (int i = 0; i < len; i++) {
-                    sb.append("0");
-                }
-                return sb.toString() + s;
-            }
-            return s;
+            MessageDigest digest = MessageDigest.getInstance(algorithm);
+            digest.update(source);
+            return toHex(digest.digest());
         } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
+    }
+
+    /**
+     * 按指定算法后对文件进行摘要计算
+     * @param sourceFile 源文件
+     * @param algorithm 算法
+     * @return 摘要值
+     */
+    public static String digestFile(File sourceFile, String algorithm) {
+        if(sourceFile == null || !sourceFile.exists()) {
+            return null;
+        }
+        try(FileInputStream fis = new FileInputStream(sourceFile)) {
+            MessageDigest digest = MessageDigest.getInstance(isNull(algorithm) ? "MD5" : algorithm);
+
+            byte[] bytes = new byte[2048];
+            int len;
+            while ((len = fis.read(bytes)) != -1) {
+                digest.update(bytes, 0, len);
+            }
+            return toHex(digest.digest());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     /**
@@ -638,7 +735,7 @@ public class RtUtil {
         int i = (int)(Math.floor(Math.log(size) / Math.log(1024)));
         String[] sizes = new String[]{"B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"};
         BigDecimal decimalFormat = new BigDecimal(size * 1.0);
-        BigDecimal decimalFormat2 = new BigDecimal(Math.pow(1024, i) * 1.0);
+        BigDecimal decimalFormat2 = BigDecimal.valueOf(Math.pow(1024, i) * 1.0);
         return (decimalFormat.divide(decimalFormat2, scale, RoundingMode.UP).doubleValue()) * 1 + " " + sizes[i];
     }
 
@@ -650,6 +747,7 @@ public class RtUtil {
     public static String toFixedString(double value) {
         return toFixedString(value, "0.00");
     }
+
     /**
      * 保留最后n位小数, 给定指定匹配
      * @param value 格式化前的小数
@@ -660,6 +758,7 @@ public class RtUtil {
         DecimalFormat df = new DecimalFormat(pattern);
         return df.format(value);
     }
+
     /**
      * 四舍五入，保留最后2位小数
      * @param value 格式化前的小数
@@ -668,6 +767,7 @@ public class RtUtil {
     public static double toFixed(double value) {
         return toFixed(value, 2);
     }
+
     /**
      * 四舍五入，保留最后n位小数
      * @param value 格式化前的小数
@@ -800,11 +900,12 @@ public class RtUtil {
         boolean stillNotCurrent = false;
         int length = 0;
         for(String s : dataArray) {
+            String at = s.startsWith("at") ? ("\t" + s) : s;
             if(notHideString == null) {
-                dataList.add(s.startsWith("at") ? ("\t" + s) : s);
+                dataList.add(at);
             } else {
                 if(s.contains(notHideString) || length == 0) {
-                    dataList.add(s.startsWith("at") ? ("\t" + s) : s);
+                    dataList.add(at);
                     stillNotCurrent = false;
                 } else {
                     if(!stillNotCurrent) {
@@ -998,8 +1099,11 @@ public class RtUtil {
      * @return 返回类Logger的消息
      */
     public static String printLoggerLike(String message) {
-        return printLoggerLike(message, "\033[32;0m" + "INFO");
+        return printLoggerLike(message, false);
 
+    }
+    public static String printLoggerLike(String message, boolean withColor) {
+        return printLoggerLike(message, (withColor ? "\033[32;0m" : "") + "INFO", withColor);
     }
 
     /**
@@ -1008,7 +1112,10 @@ public class RtUtil {
      * @return 返回类Logger的消息
      */
     public static String printWarningLike(String message) {
-        return printLoggerLike(message, "\033[33;0m" + "WARNING");
+        return printWarningLike(message, false);
+    }
+    public static String printWarningLike(String message, boolean withColor) {
+        return printLoggerLike(message, (withColor ? "\033[33;0m" : "") + "WARNING", withColor);
     }
 
     /**
@@ -1017,7 +1124,10 @@ public class RtUtil {
      * @return 返回类Logger的消息
      */
     public static String printErrorLike(String message) {
-        return printLoggerLike(message, "\033[31;0m" + "ERROR");
+        return printErrorLike(message, false);
+    }
+    public static String printErrorLike(String message, boolean withColor) {
+        return printLoggerLike(message, (withColor ? "\033[31;0m" : "") + "ERROR", withColor);
     }
 
     /**
@@ -1026,7 +1136,10 @@ public class RtUtil {
      * @return 返回类Logger的消息
      */
     public static String printDebugLike(String message) {
-        return printLoggerLike(message, "\033[32;0m" + "DEBUG");
+        return printDebugLike(message, false);
+    }
+    public static String printDebugLike(String message, boolean withColor) {
+        return printLoggerLike(message, (withColor ? "\033[32;0m" : "") + "DEBUG", withColor);
     }
 
     /**
@@ -1093,6 +1206,54 @@ public class RtUtil {
         return null;
     }
 
+    /**
+     * 从JSON中获取指定key的值
+     * 简单循环了下，性能还好，固定json提取6层，循环如下次数，耗时比较
+     * count 1, time: 0.4ms（循环1000次取平均值）
+     * count 10, time: 17ms
+     * count 100, time: 78ms
+     * count 1000, time: 334ms
+     * count 10000, time: 936ms
+     * count 100000, time: 7292ms
+     * count 1000000, time: 72308ms
+     * 例如 这样的json
+     * {
+     *     "key1": {
+     *         "keyArr1": [
+     *              "111",
+     *              "222"
+     *         ]
+     *     }
+     * }
+     * @param json json字符串
+     * @param findKey 查找的Key，如上面的json，想获得 222，可以使用 key1.keyArr1[1] 来获得222
+     * @return 返回json具体内容，这取决于查询key的类型，使用的json库是fastjson，所以如果它是json类型的，只会返回 JSONObject，JSONArray，如果是其他类型的，会正常返回Int，String等
+     */
+    public static Object getJSONValue(String json, String findKey) {
+        try {
+            Object jsonObject = JSON.parse(json);
+            Stack<String> st = new Stack<>();
+            List<String> s = Arrays.asList(split(findKey, "."));
+            if(s.size() == 0) {
+                return jsonObject;
+            }
+            for (int i = s.size() - 1; i >= 0; i--) {
+                st.push(s.get(i));
+            }
+            return recursiveGetJsonValue(st, jsonObject, new ArrayList<>(), 0);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public static byte[] encryptAESString(String text, String key) {
+        return new AES(key).encryptString(text);
+    }
+    public static byte[] decryptAESString(String text, String key) {
+        return new AES(key).decryptString(text);
+    }
+
     // 私有方法 开始 ====================================================
 
     /**
@@ -1102,6 +1263,9 @@ public class RtUtil {
      * @return 打印类Logger消息
      */
     private static String printLoggerLike(String message, String level) {
+        return printLoggerLike(message, level, false);
+    }
+    private static String printLoggerLike(String message, String level, boolean withColor) {
         String lastClass = null;
         try {
 
@@ -1113,8 +1277,8 @@ public class RtUtil {
         } catch (Exception ignored) { }
 
         String timer = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(System.currentTimeMillis());
-        System.out.println(timer + "  " + level + " \033[35;0m" + Thread.currentThread().getId() + "\033[0m" +
-                " --- \033[36;0m" + lastClass + " : \033[0m" + message);
+        System.out.println(timer + "  " + level + " " + (withColor ? "\033[35;0m" : "") + Thread.currentThread().getId() + (withColor ? "\033[0m" : "") +
+                " --- " + (withColor ? "\033[36;0m" : "") + lastClass + " : " + (withColor ? "\033[0m" : "") + message);
         if(level.contains("DEBUG")) {
             return timer + "  DEBUG " + Thread.currentThread().getId() +
                     " --- " + lastClass + " : " + message;
@@ -1130,20 +1294,6 @@ public class RtUtil {
         }
     }
 
-    /**
-     * 当前时间转字符串
-     * @return 时间字符串
-     */
-    private static String[] getTimeStringArray() {
-        Calendar calendar = Calendar.getInstance();
-        int y = calendar.get(Calendar.YEAR);
-        String m = singleToTen(calendar.get(Calendar.MONTH) + 1);
-        String d = singleToTen(calendar.get(Calendar.DAY_OF_MONTH));
-        String h = singleToTen(calendar.get(Calendar.HOUR_OF_DAY));
-        String min = singleToTen(calendar.get(Calendar.MINUTE));
-        String sec = singleToTen(calendar.get(Calendar.SECOND));
-        return  new String[]{y + "", m, d, h, min, sec};
-    }
 
     /**
      * 将小于10的数字前面加个0
@@ -1152,6 +1302,85 @@ public class RtUtil {
      */
     private static String singleToTen(int i) {
         return i < 10 ? "0" + i : i + "";
+    }
+
+    private static Object recursiveGetJsonValue(Stack<String> jsonStack, Object json, List<String> poppedKey, int recursiveTime) {
+        if(jsonStack == null || jsonStack.empty()) {
+            printErrorLike("Json has no stack, return null.");
+            return null;
+        } else if(recursiveTime > 100) {
+            printErrorLike("Json reader stopped, because of too much recursive time, MAX recursive count 100, force return null.");
+            return null;
+        }
+        // 获得待提取的jsonKey
+        String key = jsonStack.pop();
+        poppedKey.add(key);
+        int index = -1;
+        // 判断这个key是array还是object，如果 key == null 但是index >= 0 则表示此时从array开始的
+        if(key.contains("[") && key.contains("]")) {
+            int indexStart = key.indexOf("[");
+            int indexEnd = key.indexOf("]");
+            index = Integer.parseInt(key.substring(indexStart + 1, indexEnd));
+            key = indexStart == 0 ? null : key.substring(0, indexStart);
+        }
+        Object value;
+        // 如果index == -1 表示它一定是jsonObject
+        if(index == -1) {
+            JSONObject o = json instanceof JSONObject ? (JSONObject) json : null;
+            if(o != null && o.containsKey(key)) {
+                value = o.get(key);
+            } else {
+                if(o == null) {
+                    printErrorLike("JSONObject on pop " + String.join(".", poppedKey) + " returns null, it maybe null object or not JSONArray object.");
+                } else {
+                    printErrorLike("JSONObject on pop key " + String.join(".", poppedKey) + " has no value contains");
+                }
+                return null;
+            }
+        } else {
+            if(key == null) {
+                JSONArray o = json instanceof JSONArray ? (JSONArray) json : null;
+                if(o == null) {
+                    printErrorLike("JSONArray when pop key " + String.join(".", poppedKey) + " returns null, it maybe null object or not JSONArray object.");
+                }
+                value = o != null && o.size() > index ? o.get(index) : null;
+                if(value == null) {
+                    printErrorLike("JSONArray on pop key " + String.join(".", poppedKey) + " returns null, it maybe index [" + (index + 1) + "] out of array range [" + (o == null ? "NULL" : o.size()) + "].");
+                }
+            } else {
+                JSONObject o = json instanceof JSONObject ? (JSONObject) json : null;
+                if(o == null) {
+                    printErrorLike("JSONObject when pop key " + String.join(".", poppedKey) + " returns null, it maybe null object or not JSONObject object.");
+                }
+                Object ob = o != null && o.containsKey(key) ? o.get(key) : null;
+                JSONArray a = ob instanceof JSONArray ? (JSONArray) ob : null;
+                if(a == null) {
+                    printErrorLike("JSONArray when pop key " + String.join(".", poppedKey) + " returns null, it maybe null object or not JSONArray object or not contains this key.");
+                }
+                value = a != null && a.size() > index ? a.get(index) : null;
+                if(value == null) {
+                    printErrorLike("JSONArray on pop key " + String.join(".", poppedKey) + " returns null, it maybe index [" + (index + 1) + "] out of array range [" + (o == null ? "NULL" : o.size()) + "].");
+                }
+            }
+        }
+        if(value == null || jsonStack.empty()) {
+            return value;
+        } else {
+            return recursiveGetJsonValue(jsonStack, value, poppedKey, ++recursiveTime);
+        }
+    }
+
+    private static String toHex(byte[] bytes) {
+        String s = new BigInteger(1, bytes).toString(16);
+        if (s.length() != 32) {
+            int currLen = 32 - s.length();
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < currLen; i++) {
+                sb.append("0");
+            }
+            return sb.toString() + s;
+        }
+        return s;
     }
     // 私有方法 结束 ====================================================
 }

@@ -12,7 +12,7 @@
  * </dependency>
  */
 
-package com.ruterfu.third_pkg.apache.codec;
+package com.ruterfu.thirdpkg.apache.codec;
 
 import java.math.BigInteger;
 import java.util.Objects;
